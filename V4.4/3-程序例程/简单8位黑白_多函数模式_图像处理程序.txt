@@ -1,0 +1,78 @@
+// PicPro.img[line][row]=color二维数组已提供，可以直接使用
+//定义颜色，提高可读性，不能写宏,不支持undesigned
+int RED    = 255 + 1 ;
+int GREEN  = 255 + 2 ;
+int BLUE   = 255 + 3 ;
+int YELLOW = 255 + 4 ;
+int ORANGE = 255 + 5 ;
+int CYAN   = 255 + 6 ;
+int PURPLE = 255 + 7 ;
+int PINK   = 255 + 8 ;
+int MAGENTA= 255 + 9 ;
+int BLACK  = 255;
+int HWITE  = 0;
+
+//定义个颜色，提高可读性，不能写宏
+
+int[] bord_L = new int[120];
+int[] bord_R = new int[120];
+int[] centline = new int[120];
+ 
+
+public void PicProMain()
+{
+	for(int i=0;i<120;i++)
+	{
+		bord_L[i]=0;
+		bord_R[i]=187;
+	}
+	FindBorder_L(119,50,100,0,RED);
+	FindBorder_R(119,50,80,187,GREEN);
+	CalculateCentralLine(119,50,BLUE);
+
+	PicPro.Watch("centline[6]",centline[6]);
+	PicPro.Watch("第34行中线",centline[34]);  
+
+}
+
+void FindBorder_L(int lineStart,int lineEnd,int colStart,int colEnd, int color)
+{ 
+	for (int i = lineStart; i > lineEnd; i--)
+	{
+		for (int j = colStart; j > colEnd; j--)
+		{
+			if ( PicPro.img[i][j] == BLACK &&  PicPro.img[i][j + 1] != BLACK)
+			{
+				PicPro.img[i][j]=color;
+				bord_L[i] = j;
+				break;
+			}
+		}
+	} 
+}
+
+void FindBorder_R(int lineStart,int lineEnd,int colStart,int colEnd, int color)
+{ 
+	for (int i = lineStart; i > lineEnd; i--)
+	{
+		for (int j = colStart; j < colEnd; j++)
+		{
+			if ( PicPro.img[i][ j - 1] != BLACK &&  PicPro.img[i][j] == BLACK)
+			{
+				PicPro.img[i][j]=color;
+				bord_R[i] = j;
+				break;
+			} 
+		}
+	}
+}
+
+void CalculateCentralLine(int lineStart,int lineEnd,int color)
+{
+	for (int i = lineStart; i > lineEnd; i--)
+	{
+		centline[i] = (int)((bord_L[i] + bord_R[i]) * 0.5);
+		PicPro.img[i][centline[i]]=color;
+	}
+}
+

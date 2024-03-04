@@ -1,0 +1,95 @@
+使用此上位机时需对代码进行一点点变动，还请谅解，具体规则为：
+1，定义一维数组
+	类型[] 变量名 = new 类型[数组大小]
+	例如：int[] bord_L = new int[120];
+	调用：bord_L[3]=23;
+	定义时不初始化：
+		int[] array1 = new int[6];
+	定义时初始化：
+        int[] array1 = new int[6] { 1, 2, 3, 4, 5, 6 };
+        int[] array2 = new int[] { 1, 2, 3, 4, 5, 6 };
+        int[] array3 = { 1, 2, 3, 4, 5, 6 };
+2，定义二维数组
+	类型[,] 变量名 = new 类型[数组大小,数组大小]
+	例如：int[,] array2D = new int[188,120];
+	调用：array2D[3][3]=23;或test[3,3]=23;
+	定义时不初始化：
+		int[,] array2D = new int[188,120];
+	定义时初始化：
+        int[,] array2D1 = new int[3, 2] { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+        int[,] array2D2 = new int[,] { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+        int[,] array2D3 = { { 1, 2 }, { 3, 4 }, { 5, 6 } };
+3，修改图像像素颜色
+	采用位图标准数据定义黑白色：
+	PicPro.img[i][j]=0 黑色 
+	PicPro.img[i][j]=255 白色
+	PicPro.img[i][j]=255+数字;
+	(1-红色 2-绿色 3-蓝色 4-黄色 5-橙色 6-青色 7-紫色 8-粉色 9-洋红) 
+	其中，PicPro.img[i][j]数组无需定义，在加载图片或收到图片后自动产生。
+4，参数监视器使用
+	PicPro.Watch("名称"，变量);
+	例：PicPro.Watch("bord_L_flag"，bord_L_flag);
+	例：PicPro.Watch("左边界标志位"，bord_L_flag);
+	例：PicPro.Watch("bord_L[4]"，bord_L[4]);
+	例：PicPro.Watch("左边界第4行值"，bord_L[4]);
+	第一个参数是将打印出来用来提示用户的信息，第二个参数是具体参数。
+5，内置数学函数的使用
+	取绝对值：
+		类型 = Math.Abs(类型/变量); 
+		支持大多数变量，byte,short,int,float,double等
+		函数返回值和变量类型一致。
+		例如：double a=-3; double b =Math.Abs(a);
+	取最小值/最大值：
+		类型 = Math.Min(类型 a1,类型 a2);
+		支持大多数变量，byte,short,int,float,double等
+		函数返回值和变量类型一致。
+		例如：double a=3; double b =4;double c = Math.Min(a,b);
+		同理:Math.Max
+	取根号：
+		double a = Math.Sqrt (double b);
+		只能用double
+	次方：
+		double a = Math.Pow(double b,double c);
+		a=b的c次方
+	三角函数：
+		只能用double
+		double a = Math.Sin(double b);
+		double b = Math.Asin(double a);
+		double a = Math.Cos(double b);
+		double b = Math.Acos(double a);
+		double a = Math.Tan(double b);
+		double b = Math.Atan(double a);
+		a为值 b为弧度制角度
+6，串口收发数据的通信协议
+	默认串口：115200,0,0
+	数据传输协议：0XFC 0XCF 图像数据 0XCF 0XFC
+	例如：
+	
+	//UART_PutChar()换成你的串口字节发送函数，串口号改成你的，其他参数得对应上
+	void UartSendReport(int img[][],int height,int width)
+	{
+		UART_PutChar(UART4,0xFC);
+		UART_PutChar(UART4,0xCF);
+		for(int i = 0;i<height;i++)
+		for(int j = 0;j<width;j++)
+		{
+			 //传灰度图时防接错，二值化图不用担心
+			 if(img[i][j]==0xCF)
+			 {
+				 img[i][j]=0xCE;
+			 }
+		  UART_PutChar(UART4,img[i][j]);
+		}
+		UART_PutChar(UART4,0xCF);
+		UART_PutChar(UART4,0xFC);
+	}
+	
+	
+		
+	
+	
+	
+	
+	
+	
+	

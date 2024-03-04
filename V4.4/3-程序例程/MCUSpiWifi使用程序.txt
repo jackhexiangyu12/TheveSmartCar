@@ -1,0 +1,105 @@
+
+#include "headfile.h"
+
+//////////////    以下为必要代码     ////////////////
+#define IMG_H MT9V03X_CSI_H //此处可直接修改为所需的分辨率 60 也可以对接摄像头文件的宏
+#define IMG_W MT9V03X_CSI_W //此处可直接修改为所需的分辨率 160 也可以对接摄像头文件的宏
+#define IMG_SIZE (IMG_H*IMG_W)
+#define IMG_EXCEPT ((IMG_SIZE+4)%32)
+#define IMG_EXTRA (IMG_EXCEPT?1:0)
+#define IMG_PACKET (IMG_SIZE/32+IMG_EXTRA)
+//下行需替换为用户使用MCU的SPI传输函数，将发送数组、接收数组、发送字节数改为sendBuff,recvBuff,bytes即可
+#define IMG_SPI_SEND(sendBuff,recvBuff,bytes)  spi_mosi(SPI_1, SPI1_CS0_D13, sendBuff, recvBuff, bytes, 1)
+#define BUSY GPIO_PORT //换成用户MCU上的某一GPIO，用来对接NodeMCU的RTS
+#define KEY GPIO_PORT	//按键GPIO，用来测试传图使用，可取消
+#define GET_FREE  gpio_get(BUSY)//获取Nodemcu的RTS状态
+#define GET_KEY  gpio_get(KEY)//获取按键GPIO值，用来测试传图使用，可取消
+uint8_t spiSendImgArray[IMG_SIZE + 4];
+void SpiWiFiImgInit();
+void SpiWifiImgSend(uint8_t (*imgPtr)[IMG_W]); 
+//////////////    以上为必要代码     ////////////////
+
+int main(void)
+{
+  DisableGlobalIRQ();
+  board_init();   //初始化MPU 时钟 调试串口
+  systick_delay_ms(300);  //延时300ms，等待主板其他外设上电成功
+  mt9v03x_csi_init();//初始化摄像头
+//////////////   此处调用     //////////////// 
+
+  SpiWiFiImgInit(); 
+
+//////////////   此处调用     ////////////////
+  EnableGlobalIRQ(0);
+
+  while (1)
+  {
+    if (GET_KEY == 0)
+    {
+      if (mt9v03x_csi_finish_flag )
+      {  
+
+//////////////   此处调用     ////////////////
+
+        SpiWifiImgSend(mt9v03x_csi_image); 
+
+//////////////   此处调用     ////////////////
+        mt9v03x_csi_finish_flag = 0;
+      }
+    }
+  }
+}
+
+//////////////    以下为必要代码     ////////////////
+//spi传图初始化函数
+void SpiWiFiImgInit()
+{
+  //SPI初始化，选择硬件SPI，波特率默认10M，根据单片机性能调节
+  spi_init(SPI_1, SPI1_SCK_D12, SPI1_MOSI_D14, SPI1_MISO_D15, SPI1_CS0_D13, 0, 10 * 1000 * 1000);
+  //额外GPIO初始化 设置为输入，默认为高电平（上拉）
+  gpio_init(BUSY, GPI, 1, GPIO_PIN_CONFIG);
+  gpio_init(KEY, GPI, 1, GPIO_PIN_CONFIG);
+  //传输协议初始化
+  spiSendImgArray[0] = 0xfc;
+  spiSendImgArray[1] = 0xcf;
+  spiSendImgArray[IMG_SIZE + 2] = 0xcf;
+  spiSendImgArray[IMG_SIZE + 3] = 0xfc;
+}
+
+//spi传图给esp的函数
+void SpiWifiImgSend(uint8_t (*imgPtr)[IMG_W])
+{
+  static uint8_t spiSendBuf32[32] = {0x02, 0x00};
+  static uint8_t spiRecvBuf32[32] = {0};
+  if ( !GET_FREE)
+  {
+    return;
+  }
+  for (int i = 0; i < IMG_SIZE; i++)
+  {
+    spiSendImgArray[2 + i] = *(*imgPtr + i);
+  }
+  for (int i = 0; i < IMG_PACKET; i++)
+  {
+    for (uint8_t j = 2; j < 34; j++)
+    {
+      spiSendBuf32[j] = spiSendImgArray[i * 32 + j - 2];
+    }
+    if (!GET_FREE)
+    {
+      return;
+    }
+    if (IMG_EXTRA && i == IMG_PACKET - 1)
+    {
+      IMG_SPI_SEND(spiSendBuf32, spiRecvBuf32, 2 + IMG_EXCEPT);
+    }
+    else
+    {
+      IMG_SPI_SEND(spiSendBuf32, spiRecvBuf32, 34);
+    }
+    for (int i = 0; i < 100; i++)
+      asm("nop");//如果这行报错，换成分号即可
+  }
+}
+//////////////    以上为必要代码     ////////////////
+

@@ -1,0 +1,58 @@
+  
+// PicPro.img二维数组已提供，可以直接使用
+//定义个颜色，提高可读性，不能写宏
+int RED    = 255 + 1 ;
+int GREEN  = 255 + 2 ;
+int BLUE   = 255 + 3 ;
+int YELLOW = 255 + 4 ;
+int ORANGE = 255 + 5 ;
+int CYAN   = 255 + 6 ;
+int PURPLE = 255 + 7 ;
+int PINK   = 255 + 8 ;
+int MAGENTA= 255 + 9 ;
+int BLACK  = 255;
+int HWITE  = 0;
+
+//定义个颜色，提高可读性
+
+int threshold=200; //灰度值
+int[] bord_L = new int[120];
+int[] bord_R = new int[120];
+int[] centline = new int[120];
+
+for (int i = 119; i > 20; i--)
+{
+    for (int j = 120; j > 0; j--)
+    {
+        if ( PicPro.img[i][j] <threshold &&  PicPro.img[i][j + 1] >threshold)
+        {
+             PicPro.img[i][j]=RED;//可以直接写定义的颜色
+            bord_L[i] = j;
+            break;
+        }
+    }
+}
+
+for (int i = 119; i > 20; i--)
+{
+    for (int j = 40; j < 187; j++)
+    {
+        if ( PicPro.img[i][ j - 1] >threshold &&  PicPro.img[i][j] <threshold)
+        {
+             PicPro.img[i][j]=2+255;//也可以写具体颜色数据
+            bord_R[i] = j;
+            break;
+        }
+
+    }
+}
+
+for (int i = 119; i > 0; i--)
+{
+    centline[i] = (int)((bord_L[i] + bord_R[i]) * 0.5);
+	PicPro.img[i][centline[i]]=3+255;
+}
+
+
+PicPro.Watch("centline[60]",centline[60]);
+PicPro.Watch("第34行中线",centline[34]);
